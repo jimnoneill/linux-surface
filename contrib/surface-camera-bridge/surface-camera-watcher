@@ -30,7 +30,13 @@ import time
 CAMERA_DEV = os.environ.get("CAMERA_DEV", "/dev/video42")
 BRIDGE_SERVICE = os.environ.get("BRIDGE_SERVICE", "surface-camera-bridge.service")
 IDLE_SERVICE = os.environ.get("IDLE_SERVICE", "surface-camera-idle.service")
-POLL_INTERVAL = float(os.environ.get("POLL_INTERVAL", "0.1"))
+# Poll interval for the /proc/*/fd scan. 1s is a reasonable battery/latency
+# tradeoff: a full scan costs ~20-40ms of CPU on a 2-core mobile system, so
+# at 1Hz the watcher uses ~3-5% of one core continuously instead of ~12% at
+# the previous 10Hz default. The visible cost is up to 1s before the bridge
+# starts after an app opens /dev/video42 — covered by the idle-keeper service
+# always being present, so readers still get a clean STREAMON in that window.
+POLL_INTERVAL = float(os.environ.get("POLL_INTERVAL", "1.0"))
 IDLE_GRACE = float(os.environ.get("IDLE_GRACE", "3.0"))
 
 CG_BRIDGE = f"/sys/fs/cgroup/system.slice/{BRIDGE_SERVICE}/cgroup.procs"
